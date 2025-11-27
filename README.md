@@ -8,9 +8,9 @@ A tool that allows users to draw anywhere on the screen.
 <br>
 
 ## 🛠️ Why I Built This
-- There are times that I forget to bring my cards, which makes me wonder if I can do a magic trick on computer.
-- It’s a good way to learn how Python classes work ... figuring out each one takes time, though (^_^)a.
-- I like to fill my desktop with interesting programs. They look cool.
+- Sometime I need to draw on screen, it can let me note something.
+- It is cool to have a black board on my desktop.
+- I can practice using pyside to do something.
 
 <br>
 
@@ -58,4 +58,4 @@ pip install
 This project is released under the **MIT License**.  
 You are free to use, modify, and share it for learning or personal projects.
 
-**Draw anything you can imagine.**
+**Draw anything you can imagine!**
