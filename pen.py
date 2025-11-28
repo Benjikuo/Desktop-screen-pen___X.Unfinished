@@ -15,14 +15,12 @@ import math
 import os
 
 
-# 讀取 SVG icon
 def get_icon(path: str):
     base = os.path.dirname(os.path.abspath(__file__))
     full = os.path.join(base, "image", "toolbar", path)
     return QIcon(full)
 
 
-# 工具函式
 def dist(a, b):
     return math.hypot(a.x() - b.x(), a.y() - b.y())
 
@@ -289,6 +287,12 @@ class Canvas(QWidget):
             p.setPen(pen)
             p.drawRect(self.rect())
 
+    def show_size_popup(self, pos, value):
+        self.size_popup_pos = pos
+        self.size_popup_value = value
+        self.size_popup_timer = 25  # 顯示 25 frame（大概 0.4 秒）
+        self.update()
+
     # ======================
     # Tool / Undo / Redo
     # ======================
@@ -493,7 +497,7 @@ class Toolbar(QFrame):
         for s in [2, 4, 6, 8, 10, 12, 15, 20, 30]:
             size_menu.addAction(
                 f"{s}px",
-                lambda _, v=s: (
+                lambda v=s: (
                     setattr(canvas, "thickness", v),
                     canvas.update(),
                     self.btn_size.update(),
@@ -529,7 +533,7 @@ class Toolbar(QFrame):
         for name, rgb in colors.items():
             color_menu.addAction(
                 name,
-                lambda _, c=rgb: (canvas.set_color_tuple(c), self.btn_color.update()),
+                lambda c=rgb: (canvas.set_color_tuple(c), self.btn_color.update()),
             )
         self.btn_color.setMenu(color_menu)
 
@@ -681,13 +685,13 @@ class Window(QWidget):
             self.toolbar.btn_color.update()
 
         # ===== 快捷鍵 =====
+        sc("W", self.toggle_board)
+        sc("E", lambda: self.canvas.set_tool("eraser"))
+        sc("F", lambda: self.canvas.set_tool("pen"))
         sc("C", next_color)
         sc("Z", self.canvas.undo)
         sc("X", self.canvas.clear)
         sc("Shift+Z", self.canvas.redo)
-        sc("E", lambda: self.canvas.set_tool("eraser"))
-        sc("F", lambda: self.canvas.set_tool("pen"))
-        sc("W", self.toggle_board)
         sc("Esc", self.closeEvent)
 
     def closeEvent(self, event=None):
