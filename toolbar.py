@@ -93,11 +93,10 @@ class ColorButton(QPushButton):
 
 
 class Toolbar(QFrame):
-    def __init__(self, parent, canvas: Canva, close_callback):
-        super().__init__(parent)
+    def __init__(self, window, canva):
+        super().__init__(window)
 
-        self.canvas = canvas
-        self.close_callback = close_callback
+        self.canva = canva
 
         self.setFixedHeight(70)
         self.setStyleSheet(
@@ -121,15 +120,15 @@ class Toolbar(QFrame):
             return btn
 
         btn_board = icon_btn("board.svg")
-        btn_board.clicked.connect(parent.toggle_board)
+        btn_board.clicked.connect(window.toggle_board)
 
-        btn_pen = icon_btn(f"tools/{self.canvas.tool}.svg")
+        btn_pen = icon_btn(f"tools/{self.canva.tool}.svg")
         pen_menu = QMenu(self)
         pen_menu.addAction("自由筆", lambda: self.select_pen("free"))
         pen_menu.addAction("螢光筆", lambda: self.select_pen("highlight"))
         btn_pen.setMenu(pen_menu)
 
-        self.btn_size = SizeButton(canvas)
+        self.btn_size = SizeButton(canva)
         layout.addWidget(self.btn_size)
 
         size_menu = QMenu(self)
@@ -140,16 +139,16 @@ class Toolbar(QFrame):
             )
         self.btn_size.setMenu(size_menu)
 
-        self.btn_shape = ShapeButton(canvas)
+        self.btn_shape = ShapeButton(canva)
         layout.addWidget(self.btn_shape)
 
         shape_menu = QMenu(self)
-        shape_menu.addAction("自由筆", lambda: self.set_shape("free"))
-        shape_menu.addAction("直線", lambda: self.set_shape("line"))
-        shape_menu.addAction("矩形", lambda: self.set_shape("rect"))
+        shape_menu.addAction("自由筆", lambda: self.canva.set_shape("free"))
+        shape_menu.addAction("直線", lambda: self.canva.set_shape("line"))
+        shape_menu.addAction("矩形", lambda: self.canva.set_shape("rect"))
         self.btn_shape.setMenu(shape_menu)
 
-        self.btn_color = ColorButton(canvas)
+        self.btn_color = ColorButton(canva)
         layout.addWidget(self.btn_color)
 
         color_menu = QMenu(self)
@@ -166,7 +165,7 @@ class Toolbar(QFrame):
         for name, rgb in colors.items():
             color_menu.addAction(
                 name,
-                lambda c=rgb: (self.canvas.set_color_tuple(c), self.btn_color.update()),
+                lambda c=rgb: (self.canva.set_color_tuple(c), self.btn_color.update()),
             )
         self.btn_color.setMenu(color_menu)
 
@@ -177,48 +176,43 @@ class Toolbar(QFrame):
         btn_save.setMenu(menu_save)
 
         btn_undo = icon_btn("undo.svg")
-        btn_undo.clicked.connect(canvas.undo)
+        btn_undo.clicked.connect(canva.undo)
 
         btn_redo = icon_btn("redo.svg")
-        btn_redo.clicked.connect(canvas.redo)
+        btn_redo.clicked.connect(canva.redo)
 
         btn_clear = icon_btn("clear.svg")
-        btn_clear.clicked.connect(canvas.clear)
+        btn_clear.clicked.connect(canva.clear)
 
         btn_close = icon_btn("close.svg")
-        btn_close.clicked.connect(self.close_callback)
+        btn_close.clicked.connect(window.closeEvent)
 
     def select_pen(self, mode):
-        self.canvas.set_tool("pen")
-        self.canvas.shape = "free"
+        self.canva.set_tool("pen")
+        self.canva.shape = "free"
 
         if mode == "free":
-            self.canvas.thickness = 4
+            self.canva.thickness = 4
 
         elif mode == "highlight":
-            self.canvas.thickness = 12
-            c = self.canvas.pen_color
-            self.canvas.pen_color = QColor(c.red(), c.green(), c.blue(), 120)
-
-    def set_shape(self, shape):
-        self.canvas.shape = shape
-        self.canvas.set_tool("pen")
-        self.btn_shape.update()
+            self.canva.thickness = 12
+            c = self.canva.pen_color
+            self.canva.pen_color = QColor(c.red(), c.green(), c.blue(), 120)
 
     def set_thickness(self, px):
-        self.canvas.thickness = px
-        self.canvas.update()
+        self.canva.thickness = px
+        self.canva.update()
 
     def save_background(self):
         path, _ = QFileDialog.getSaveFileName(
             self, "Save", "canvas.png", "PNG Files (*.png)"
         )
         if path:
-            self.canvas.save_with_background(path)
+            self.canva.save_with_background(path)
 
     def save_transparent(self):
         path, _ = QFileDialog.getSaveFileName(
             self, "Save Transparent", "canvas.png", "PNG Files (*.png)"
         )
         if path:
-            self.canvas.save_transparent(path)
+            self.canva.save_transparent(path)

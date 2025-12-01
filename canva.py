@@ -39,10 +39,18 @@ class Canva(QWidget):
         super().__init__(parent)
 
         self.drawing_mode = True
+        self.board_color = (0, 0, 0, 50)
         self.setCursor(Qt.CrossCursor)
 
-        self.board_color = (0, 0, 0, 50)
         self.tool = "pen"
+        self.tools = {
+            "pen": {"size": 4, "shape": "free", "color": (255, 255, 255, 255)},
+            "highlight": {"size": 12, "shape": "free", "color": (255, 255, 0, 120)},
+            "eraser": {"size": 30, "shape": "free", "color": None},
+            "line": {"size": 4, "shape": "line", "color": (255, 255, 255, 255)},
+            "rect": {"size": 4, "shape": "rect", "color": (255, 255, 255, 255)},
+        }
+
         self.shape = "free"
         self.thickness = 4
         self.pen_color = QColor(255, 255, 255)
@@ -268,6 +276,14 @@ class Canva(QWidget):
         self.size_popup_timer = 10
         self.update()
 
+    def set_color_tuple(self, rgb):
+        r, g, b = rgb
+        self.pen_color = QColor(r, g, b)
+        self.update()
+
+    def erase_at(self, pos):
+        pass
+
     def set_tool(self, tool):
         self.tool = tool
 
@@ -276,9 +292,27 @@ class Canva(QWidget):
         else:
             self.setCursor(Qt.CrossCursor)
 
-    def set_color_tuple(self, rgb):
-        r, g, b = rgb
-        self.pen_color = QColor(r, g, b)
+    def set_size(self, size):
+        self.thickness = size
+
+    def set_shape(self, shape):
+        self.shape = shape
+
+    def set_color(self, color):
+        self.pen_color = color
+
+    def save_with_background(self, path):
+        pix = self.grab()
+        pix.save(path, "PNG")
+
+    def save_transparent(self, path):
+        old = self.board_color
+        self.board_color = (0, 0, 0, 0)
+
+        pix = self.grab()
+        pix.save(path, "PNG")
+
+        self.board_color = old
         self.update()
 
     def undo(self):
@@ -299,20 +333,3 @@ class Canva(QWidget):
             self.history.append({"type": "clear_marker"})
             self.history.clear()
         self.update()
-
-    def save_with_background(self, path):
-        pix = self.grab()
-        pix.save(path, "PNG")
-
-    def save_transparent(self, path):
-        old = self.board_color
-        self.board_color = (0, 0, 0, 0)
-
-        pix = self.grab()
-        pix.save(path, "PNG")
-
-        self.board_color = old
-        self.update()
-
-    def erase_at(self, pos):
-        pass
