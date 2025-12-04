@@ -34,14 +34,14 @@ pip install
 
 <br>
 
+
 ## ▶️ How to Run
-1. Make sure the folder /image/card contains **54 card faces**, one **back image**, and one **box image**.
-2. Make sure the folder /image/button contains the **three** button states (gray, orange, and white).
-3. Launch the program:
-   ```bash
-   python card_button.py
-   ```
-4. Click the spade-shaped button at at the bottom left to toggle the main card window. 
+1. Clone & run:
+```bash
+git clone https://github.com/Benjikuo/2D-dice-on-desktop.git
+python dice.py
+```
+2. Draw on the screen.
 
 <br>
 
@@ -50,7 +50,24 @@ pip install
 **Basic Operations:**
 | Key | Action |
 |-----|--------|
-| `E`        | Spawn a card |
+| `W`         | Spawn a card |
+| `E`         | Spawn a card |
+| `D`         | Spawn a card |
+| `Q`         | Spawn a card |
+| `S`         | Spawn a card |
+| `C`         | Spawn a card |
+| `R`         | Spawn a card |
+| `F`         | Spawn a card |
+| `V`         | Spawn a card |
+| `SHIFT + Q` | Spawn a card |
+| `S`        | Spawn a card |
+| `C`        | Spawn a card |
+| `R`        | Spawn a card |
+| `F`        | Spawn a card |
+| `V`        | Spawn a card |
+| `W`        | Spawn a card |
+| `W`        | Spawn a card |
+
 
 <br>
 
