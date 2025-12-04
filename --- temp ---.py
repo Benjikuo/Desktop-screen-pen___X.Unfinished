@@ -34,92 +34,39 @@ def rect_hit(p, rect, r):
     return math.hypot(p.x() - x, p.y() - y) <= r
 
 
-class BaseTool:
-    """
-    初步版本：只有屬性，不處理邏輯。
-    不會破壞原本 set_tool / set_size / set_color。
-    """
-
-    name = "base"
-    default_size = 4
-    default_color = "white"
-    shape = "free"
-
-    def __init__(self):
-        self.size = self.default_size
-        self.color = self.default_color  # 儲存字串
-        self.shape = self.shape
-
-    def get_qcolor(self):
-        if self.color is None:
-            return None
-        rgb = COLOR_TABLE.get(self.color, (255, 255, 255))
-        return QColor(*rgb)
-
-
-class PenTool(BaseTool):
-    name = "pen"
-    default_size = 4
-    default_color = "white"
-    shape = "free"
-
-
-class HighlightTool(BaseTool):
-    name = "highlight"
-    default_size = 12
-    default_color = "yellow"
-    shape = "free"
-
-
-class EraserTool(BaseTool):
-    name = "eraser"
-    default_size = 30
-    default_color = None
-    shape = "free"
-
-
-class CropEraserTool(BaseTool):
-    name = "crop_eraser"
-    default_size = 40
-    default_color = None
-    shape = "rect"
-
-
 class Canva(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        # --- 畫布狀態 ---
         self.drawing_mode = True
         self.board_color = (0, 0, 0, 50)
         self.setCursor(Qt.CrossCursor)
 
+        # --- 工具設定 ---
         self.tool = "pen"
         self.tools = {
-            "pen": {"size": 4, "shape": "free", "color": "white"},
-            "highlight": {"size": 12, "shape": "free", "color": "yellow"},
-            "eraser": {"size": 30, "shape": "free", "color": None},
-            "crop_eraser": {"size": 40, "shape": "rect", "color": None},
-        }
-        self.tool_objects = {
-            "pen": PenTool(),
-            "highlight": HighlightTool(),
-            "eraser": EraserTool(),
-            "crop_eraser": CropEraserTool(),
+            "pen": {"size": 4, "shape": "free", "color": (255, 255, 255, 255)},
+            "highlight": {"size": 12, "shape": "free", "color": (255, 255, 0, 120)},
+            "eraser": {"size": 30},
         }
 
+        # 目前工具狀態（會被工具 dict 覆蓋）
         self.shape = "free"
         self.thickness = 4
-        self.color = "white"
         self.pen_color = QColor(255, 255, 255)
 
+        # 當前筆畫使用資料
         self.start_pos = None
         self.last_pos = None
         self.current_stroke = []
 
-        self.strokes = []
-        self.history = []
-        self.history_index = -1
+        # --- 象棋式 History ---
+        self.strokes = []  # 當前畫面上的筆畫
+        self.history = []  # 所有 snapshot
+        self.history_index = -1  # 目前指向的版本
 
+        # --- 其他 ---
         self.eraser_pos = None
         self.setMouseTracking(True)
 
@@ -127,7 +74,12 @@ class Canva(QWidget):
         self.size_popup_value = None
         self.size_popup_timer = 0
 
+        # 起始 snapshot
         self.add_history_snapshot()
+
+    # ============================================================
+    #   Snapshot / Restore （象棋式）
+    # ============================================================
 
     def snapshot(self):
         """建立當前畫面的完整快照。"""
@@ -286,8 +238,12 @@ class Canva(QWidget):
         self.start_pos = None
         self.last_pos = None
 
-        self.add_history_snapshot()
+        self.add_history_snapshot()  # 象棋式存一份
         self.update()
+
+    # ============================================================
+    #   Paint
+    # ============================================================
 
     def paintEvent(self, event):
         p = QPainter(self)
@@ -365,6 +321,10 @@ class Canva(QWidget):
             p.setPen(pen)
             p.drawRect(self.rect())
 
+    # ============================================================
+    #   Drawing helpers
+    # ============================================================
+
     def draw_background(self, painter):
         r, g, b, a = self.board_color
         painter.fillRect(self.rect(), QColor(r, g, b, a))
@@ -388,21 +348,21 @@ class Canva(QWidget):
         elif t == "rect":
             painter.drawRect(item["rect"])
 
+    # ============================================================
+    #   Tool actions
+    # ============================================================
+
     def show_size_popup(self, pos, value):
         self.size_popup_pos = pos
         self.size_popup_value = value
         self.size_popup_timer = 10
         self.update()
 
-    def last_tool(self):
-        pass
-
     def set_tool(self, tool):
         self.tool = tool
         cfg = self.tools[tool]
 
         self.shape = cfg["shape"]
-
         self.thickness = cfg["size"]
 
         if cfg["color"] is None:
@@ -422,29 +382,31 @@ class Canva(QWidget):
         self.shape = shape
         self.tools[self.tool]["shape"] = shape
 
-    def set_color(self, color):
-        self.color = color
-        if color == "white":
-            rgb = (255, 255, 255)
-        elif color == "red":
-            rgb = (248, 49, 47)
-        elif color == "orange":
-            rgb = (255, 103, 35)
-        elif color == "yellow":
-            rgb = (255, 176, 46)
-        elif color == "green":
-            rgb = (0, 210, 106)
-        elif color == "blue":
-            rgb = (0, 166, 237)
-        elif color == "purple":
-            rgb = (199, 144, 241)
-        else:
-            print("Error: Invalid color")
-
+    def set_color(self, rgb):
         r, g, b = rgb
         self.pen_color = QColor(r, g, b)
         self.tools[self.tool]["color"] = (r, g, b, 255)
         self.update()
+
+    # ============================================================
+    #   File saving
+    # ============================================================
+
+    def save_with_background(self, path):
+        pix = self.grab()
+        pix.save(path, "PNG")
+
+    def save_transparent(self, path):
+        old = self.board_color
+        self.board_color = (0, 0, 0, 0)
+        pix = self.grab()
+        pix.save(path, "PNG")
+        self.board_color = old
+        self.update()
+
+    # ============================================================
+    #   Undo / Redo
+    # ============================================================
 
     def undo(self):
         if self.history_index > 0:
@@ -456,7 +418,11 @@ class Canva(QWidget):
             self.history_index += 1
             self.restore(self.history[self.history_index])
 
+    # ============================================================
+    #   Clear
+    # ============================================================
+
     def clear(self):
         self.strokes = []
-        self.update()
         self.add_history_snapshot()
+        self.update()

@@ -1,7 +1,7 @@
 # type: ignore
 from PySide2.QtCore import Qt, QSize, QPoint
 from PySide2.QtGui import QColor, QPainter, QPen, QIcon
-from PySide2.QtWidgets import QPushButton, QFrame, QHBoxLayout, QMenu, QFileDialog
+from PySide2.QtWidgets import QPushButton, QFrame, QHBoxLayout, QMenu
 import os
 
 from canva import Canva
@@ -21,17 +21,15 @@ class SizeButton(QPushButton):
 
     def paintEvent(self, event):
         super().paintEvent(event)
+
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
-
-        r = min(18, self.canvas.thickness / 2)
-        pen = QPen(QColor(255, 255, 255), 3)
-
-        p.setPen(pen)
+        p.setPen(QPen(QColor(255, 255, 255), 3))
         p.setBrush(Qt.NoBrush)
 
         cx = self.width() // 2
         cy = self.height() // 2
+        r = min(18, self.canvas.thickness / 2)
         p.drawEllipse(QPoint(cx, cy), r, r)
 
 
@@ -43,20 +41,20 @@ class ShapeButton(QPushButton):
 
     def paintEvent(self, event):
         super().paintEvent(event)
+
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
-
-        pen = QPen(QColor(255, 255, 255), 3)
-        p.setPen(pen)
+        p.setPen(QPen(QColor(255, 255, 255), 3))
 
         cx = self.width() // 2
         cy = self.height() // 2
-        shape = self.canvas.shape
 
+        shape = self.canvas.shape
         if shape == "free":
             font = p.font()
             font.setFamily("Microsoft JhengHei")
             font.setPointSize(24)
+
             p.setFont(font)
             p.drawText(self.rect(), Qt.AlignCenter, "S")
 
@@ -75,35 +73,61 @@ class ColorButton(QPushButton):
 
     def paintEvent(self, event):
         super().paintEvent(event)
+
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
+        p.setPen(QPen(QColor(255, 255, 255), 3))
 
         r = self.canvas.pen_color.red()
         g = self.canvas.pen_color.green()
         b = self.canvas.pen_color.blue()
-
-        pen = QPen(QColor(255, 255, 255), 3)
-        p.setPen(pen)
         p.setBrush(QColor(r, g, b))
 
-        size = 26
-        x = (self.width() - size) // 2
-        y = (self.height() - size) // 2
-        p.drawRect(x, y, size, size)
+        x = (self.width()) // 2
+        y = (self.height()) // 2
+        p.drawRoundedRect(x - 13, y - 13, 26, 26, 8, 8)
 
 
 class Toolbar(QFrame):
     def __init__(self, window, canva):
         super().__init__(window)
-
         self.canva = canva
 
-        self.setFixedHeight(70)
+        self.setFixedHeight(72)
         self.setStyleSheet(
             """
-            QFrame { background-color: rgba(40,40,40,230); border-radius: 12px; }
-            QPushButton { background-color: rgba(70,70,70,255); border-radius: 8px; }
-            QPushButton:hover { background-color: rgba(95,95,95,255); }
+            QFrame {
+                background-color: #333333;
+                border-radius: 12px;
+            }
+        
+            QPushButton {
+                background-color: #555555;
+                border-radius: 8px;
+            }
+        
+            QPushButton:hover {
+                background-color: #777777;
+            }
+
+            QPushButton:pressed {
+                background-color: #906000;
+            }
+        
+            QMenu {
+                background-color: #333333;
+                color: #FFFFFF;
+                border: 1px solid #666666;
+                font-size: 15px;
+            }
+
+            QMenu::item {
+                padding: 4px 6px;
+            }
+        
+            QMenu::item:selected {
+                background-color: #555555;
+            }
             """
         )
 
@@ -119,100 +143,82 @@ class Toolbar(QFrame):
             layout.addWidget(btn)
             return btn
 
+        # board
         btn_board = icon_btn("board.svg")
         btn_board.clicked.connect(window.toggle_board)
 
-        btn_pen = icon_btn(f"tools/{self.canva.tool}.svg")
-        pen_menu = QMenu(self)
-        pen_menu.addAction("自由筆", lambda: self.select_pen("free"))
-        pen_menu.addAction("螢光筆", lambda: self.select_pen("highlight"))
-        btn_pen.setMenu(pen_menu)
+        # tool
+        btn_tool = icon_btn(f"tools/{self.canva.tool}.svg")
+        tool_menu = QMenu(self)
+        tool_menu.addAction("🖊️ pen", lambda: self.canva.set_tool("free"))
+        tool_menu.addAction("🖍️ highlight", lambda: self.canva.set_tool("highlight"))
+        tool_menu.addAction(" █  eraser", lambda: self.canva.set_tool("eraser"))
+        tool_menu.addAction(
+            "［ ］ crop eraser", lambda: self.canva.set_tool("crop_eraser")
+        )
+        btn_tool.setMenu(tool_menu)
 
+        # size
         self.btn_size = SizeButton(canva)
         layout.addWidget(self.btn_size)
-
         size_menu = QMenu(self)
-        for s in [2, 4, 6, 8, 10, 12, 15, 20, 30]:
+        for s in [4, 6, 10, 14, 20, 30, 50]:
             size_menu.addAction(
                 f"{s}px",
-                lambda v=s: (self.set_thickness(v), self.btn_size.update()),
+                lambda v=s: (self.canva.set_size(v), self.btn_size.update()),
             )
         self.btn_size.setMenu(size_menu)
 
+        # shape
         self.btn_shape = ShapeButton(canva)
         layout.addWidget(self.btn_shape)
-
         shape_menu = QMenu(self)
-        shape_menu.addAction("自由筆", lambda: self.canva.set_shape("free"))
-        shape_menu.addAction("直線", lambda: self.canva.set_shape("line"))
-        shape_menu.addAction("矩形", lambda: self.canva.set_shape("rect"))
+        shape_menu.addAction(" S  free pen", lambda: self.canva.set_shape("free"))
+        shape_menu.addAction(" ╲  line", lambda: self.canva.set_shape("line"))
+        shape_menu.addAction("☐  ractangle", lambda: self.canva.set_shape("rect"))
         self.btn_shape.setMenu(shape_menu)
 
+        # color
         self.btn_color = ColorButton(canva)
         layout.addWidget(self.btn_color)
-
         color_menu = QMenu(self)
         colors = {
-            "白": (255, 255, 255),
-            "灰": (136, 136, 136),
-            "紅": (255, 0, 0),
-            "橙": (255, 136, 0),
-            "黃": (255, 255, 0),
-            "綠": (0, 255, 0),
-            "藍": (0, 128, 255),
-            "紫": (170, 85, 255),
+            "⬜ white": "white",
+            "🟥 red": "red",
+            "🟧 orange": "orange",
+            "🟨 yellow": "yellow",
+            "🟩 green": "green",
+            "🟦 blue": "blue",
+            "🟪 purple": "purple",
         }
-        for name, rgb in colors.items():
+        for name, color in colors.items():
             color_menu.addAction(
                 name,
-                lambda c=rgb: (self.canva.set_color_tuple(c), self.btn_color.update()),
+                lambda c=color: (self.canva.set_color(c), self.btn_color.update()),
             )
         self.btn_color.setMenu(color_menu)
 
+        # save
         btn_save = icon_btn("save.svg")
-        menu_save = QMenu(self)
-        menu_save.addAction("Save with Background", self.save_background)
-        menu_save.addAction("Save Transparent", self.save_transparent)
-        btn_save.setMenu(menu_save)
+        save_menu = QMenu(self)
+        save_menu.addAction("⬛ Black background", lambda: window.save("black"))
+        save_menu.addAction(
+            " ....  Transparent background", lambda: window.save("trans")
+        )
+        btn_save.setMenu(save_menu)
 
+        # undo
         btn_undo = icon_btn("undo.svg")
         btn_undo.clicked.connect(canva.undo)
 
+        # redo
         btn_redo = icon_btn("redo.svg")
         btn_redo.clicked.connect(canva.redo)
 
+        # clear
         btn_clear = icon_btn("clear.svg")
         btn_clear.clicked.connect(canva.clear)
 
+        # close
         btn_close = icon_btn("close.svg")
         btn_close.clicked.connect(window.closeEvent)
-
-    def select_pen(self, mode):
-        self.canva.set_tool("pen")
-        self.canva.shape = "free"
-
-        if mode == "free":
-            self.canva.thickness = 4
-
-        elif mode == "highlight":
-            self.canva.thickness = 12
-            c = self.canva.pen_color
-            self.canva.pen_color = QColor(c.red(), c.green(), c.blue(), 120)
-
-    def set_thickness(self, px):
-        self.canva.thickness = px
-        self.canva.update()
-
-    def save_background(self):
-        path, _ = QFileDialog.getSaveFileName(
-            self, "Save", "canvas.png", "PNG Files (*.png)"
-        )
-        if path:
-            self.canva.save_with_background(path)
-
-    def save_transparent(self):
-        path, _ = QFileDialog.getSaveFileName(
-            self, "Save Transparent", "canvas.png", "PNG Files (*.png)"
-        )
-        if path:
-            self.canva.save_transparent(path)
